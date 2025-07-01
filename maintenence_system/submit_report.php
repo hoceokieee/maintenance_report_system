@@ -632,10 +632,10 @@ include "includes/header.php";
                         <div class="form-group">
                             <label for="location" class="form-label">
                                 <i class="bi bi-geo-alt"></i>
-                                Location/Asset
+                                Location
                             </label>
                             <input type="text" class="form-control" id="location" name="location" 
-                                   placeholder="Specify the location or asset name" required>
+                                   placeholder="Specify the location" required>
                         </div>
                     </div>
 
