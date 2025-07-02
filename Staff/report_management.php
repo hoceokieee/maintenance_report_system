@@ -9,7 +9,10 @@ if (!isset($_SESSION['id']) || $_SESSION['role'] !== 'Staff') {
     exit();
 }
 
-// Fetch all reports
+$search = $_GET['search'] ?? '';
+$from_date = $_GET['from_date'] ?? '';
+$to_date = $_GET['to_date'] ?? '';
+
 $sql = "
 SELECT 
     r.Report_ID,
@@ -44,10 +47,28 @@ LEFT JOIN (
 ) first_media ON r.Report_ID = first_media.Report_ID
 LEFT JOIN media m ON m.Media_ID = first_media.first_media_id
 
-ORDER BY r.report_date DESC;
+WHERE 1 = 1
 ";
 
+if (!empty($search)) {
+    $safeSearch = $conn->real_escape_string($search);
+    $sql .= " AND (r.title LIKE '%$safeSearch%' OR r.location LIKE '%$safeSearch%')";
+}
+
+if (!empty($from_date)) {
+    $safeFrom = $conn->real_escape_string($from_date);
+    $sql .= " AND r.report_date >= '$safeFrom'";
+}
+
+if (!empty($to_date)) {
+    $safeTo = $conn->real_escape_string($to_date);
+    $sql .= " AND r.report_date <= '$safeTo'";
+}
+
+$sql .= " ORDER BY r.report_date DESC";
+
 $result = $conn->query($sql);
+
 ?>
 
 <!DOCTYPE html>
@@ -55,7 +76,67 @@ $result = $conn->query($sql);
 <head>
     <title>Report Management</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <style>
+
+    <script>
+document.addEventListener("DOMContentLoaded", function () {
+    const searchInput = document.querySelector("input[name='search']");
+    const form = searchInput.closest("form");
+
+    let timer;
+    searchInput.addEventListener("input", function () {
+        clearTimeout(timer);
+        timer = setTimeout(() => {
+            form.submit(); // auto-submit after user stops typing
+        }, 500); // 0.5s delay
+    });
+});
+</script>
+
+<style>
+    .filter-form {
+        margin-bottom: 20px;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 15px;
+        align-items: center;
+        background-color: #fff;
+        padding: 15px;
+        border-radius: 10px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+
+    .filter-form input[type="text"],
+    .filter-form input[type="date"] {
+        padding: 8px 10px;
+        border-radius: 6px;
+        border: 1px solid #ccc;
+        flex: 1;
+        min-width: 180px;
+    }
+
+    .filter-form button {
+        background-color: #007bff;
+        border: none;
+        color: white;
+        padding: 8px 14px;
+        border-radius: 6px;
+        cursor: pointer;
+    }
+
+    .filter-form a {
+        padding: 8px 14px;
+        background-color: #dc3545;
+        color: white;
+        text-decoration: none;
+        border-radius: 6px;
+    }
+
+    .filter-form label {
+        font-size: 14px;
+        font-weight: 500;
+    }
+
+
         body {
             margin: 0;
             font-family: Arial, sans-serif;
@@ -136,6 +217,8 @@ $result = $conn->query($sql);
                 padding: 10px;
             }
         }
+
+        
     </style>
 </head>
 <body>
@@ -153,6 +236,22 @@ $result = $conn->query($sql);
 <div class="main-wrapper">
     <div class="main-content">
         <h2>Report Management</h2>
+
+        <form method="GET" class="filter-form">
+            <input type="text" name="search" placeholder="Search by title or location" value="<?= htmlspecialchars($_GET['search'] ?? '') ?>">
+            
+            <label>From:
+                <input type="date" name="from_date" value="<?= htmlspecialchars($_GET['from_date'] ?? '') ?>">
+            </label>
+
+            <label>To:
+                <input type="date" name="to_date" value="<?= htmlspecialchars($_GET['to_date'] ?? '') ?>">
+            </label>
+
+            <button type="submit">Filter</button>
+            <a href="report_management.php" style="margin-left: 10px; text-decoration: none;">Reset</a>
+        </form>
+
 
         <div class="table-container">
             <table>
