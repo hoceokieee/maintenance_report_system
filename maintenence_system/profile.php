@@ -41,38 +41,49 @@ $success_message = '';
 $error_message = '';
 
 // Handle profile update
-if (isset($_POST["update_profile"])) {
+if ($_SERVER["REQUEST_METHOD"] === "POST") {
+
+  // Personal info update
+  if (isset($_POST["update_profile"])) {
     $name = trim($_POST["name"]);
     $email = trim($_POST["email"]);
-    $current_password = $_POST["current_password"];
-    $new_password = $_POST["new_password"];
-    
-    // Verify current password if trying to change password
-    if (!empty($new_password)) {
-        if (empty($current_password)) {
-            $error_message = "Current password is required to change password.";
-        } else if (!password_verify($current_password, $user['password'])) {
-            $error_message = "Current password is incorrect.";
-        } else {
-            // Update with new password
-            $hashed_password = password_hash($new_password, PASSWORD_DEFAULT);
-            $sql = "UPDATE USERS SET name = ?, email = ?, password = ? WHERE User_ID = ?";
-            $stmt = $conn->prepare($sql);
-            $stmt->bind_param("sssi", $name, $email, $hashed_password, $user_id);
-        }
-    } else {
-        // Update without changing password
-        $sql = "UPDATE USERS SET name = ?, email = ? WHERE User_ID = ?";
-        $stmt = $conn->prepare($sql);
-        $stmt->bind_param("ssi", $name, $email, $user_id);
-    }
-    
-    if (empty($error_message) && $stmt->execute()) {
-        $success_message = "Profile updated successfully!";
+
+    $sql = "UPDATE USERS SET name = ?, email = ? WHERE User_ID = ?";
+    $stmt = $conn->prepare($sql);
+    $stmt->bind_param("ssi", $name, $email, $user_id);
+
+    if ($stmt->execute()) {
         $_SESSION['name'] = $name;
-    } else if (empty($error_message)) {
+        $success_message = "Profile updated successfully!";
+    } else {
         $error_message = "Failed to update profile.";
     }
+  }
+
+  // Password update
+  if (isset($_POST["update_password"])) {
+    $current_password = $_POST["current_password"];
+    $new_password = $_POST["new_password"];
+
+    if (empty($new_password)) {
+        $error_message = "New password is required.";
+    } else if (empty($current_password)) {
+        $error_message = "Current password is required.";
+    } else if (!password_verify($current_password, $user['password'])) {
+        $error_message = "Current password is incorrect.";
+    } else {
+        $hashed_password = password_hash($new_password, PASSWORD_DEFAULT);
+        $sql = "UPDATE USERS SET password = ? WHERE User_ID = ?";
+        $stmt = $conn->prepare($sql);
+        $stmt->bind_param("si", $hashed_password, $user_id);
+
+        if ($stmt->execute()) {
+            $success_message = "Password updated successfully!";
+        } else {
+            $error_message = "Failed to update password.";
+        }
+    }
+  }
 }
 
 // Handle profile picture upload
@@ -713,11 +724,11 @@ if (isset($_FILES['profile_picture']) && $_FILES['profile_picture']['error'] == 
                 </div>
 
                 <div class="profile-actions">
-                    <button class="btn-profile btn-primary">
+                    <button id="editProfileBtn" class="btn-profile btn-primary">
                         <i class="bi bi-pencil-square"></i>
                         Edit Profile
                     </button>
-                    <button class="btn-profile btn-secondary">
+                    <button id="securitySettingsBtn" class="btn-profile btn-secondary">
                         <i class="bi bi-shield-lock"></i>
                         Security Settings
                     </button>
@@ -726,7 +737,7 @@ if (isset($_FILES['profile_picture']) && $_FILES['profile_picture']['error'] == 
 
             <div class="profile-main">
                 <div class="profile-tabs">
-                    <button class="tab-btn active" data-tab="personal">
+                    <button class="tab-btn" data-tab="personal">
                         <i class="bi bi-person-badge"></i>
                         Personal Info
                     </button>
@@ -782,40 +793,6 @@ if (isset($_FILES['profile_picture']) && $_FILES['profile_picture']['error'] == 
                             </div>
                         </div>
 
-                        <div class="form-divider">
-                            <span>Security Settings</span>
-                        </div>
-
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label for="current_password" class="form-label">
-                                    <i class="bi bi-key"></i>
-                                    Current Password
-                                </label>
-                                <div class="password-input">
-                                    <input type="password" class="form-control" id="current_password" name="current_password">
-                                    <button type="button" class="password-toggle">
-                                        <i class="bi bi-eye"></i>
-                                    </button>
-                                </div>
-                                <div class="form-text">Required only if changing password</div>
-                            </div>
-                            
-                            <div class="form-group">
-                                <label for="new_password" class="form-label">
-                                    <i class="bi bi-lock"></i>
-                                    New Password
-                                </label>
-                                <div class="password-input">
-                                    <input type="password" class="form-control" id="new_password" name="new_password">
-                                    <button type="button" class="password-toggle">
-                                        <i class="bi bi-eye"></i>
-                                    </button>
-                                </div>
-                                <div class="form-text">Leave blank to keep current password</div>
-                            </div>
-                        </div>
-
                         <div class="form-actions">
                             <input type="hidden" name="update_profile" value="1">
                             <button type="submit" class="btn-submit">
@@ -830,8 +807,47 @@ if (isset($_FILES['profile_picture']) && $_FILES['profile_picture']['error'] == 
                     </form>
                 </div>
 
-                <div class="tab-content hidden" id="security-tab">
+                <div class="tab-content" id="security-tab" style="display: none;">
+                     <form action="" method="POST" class="profile-form">
+                        <input type="hidden" name="update_password" value="1">
                     <!-- Security tab content -->
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="current_password" class="form-label">
+                                <i class="bi bi-key"></i> Current Password
+                            </label>
+                            <div class="password-input">
+                                <input type="password" class="form-control" id="current_password" name="current_password">
+                                <button type="button" class="password-toggle">
+                                    <i class="bi bi-eye"></i>
+                                </button>
+                            </div>
+                            <div class="form-text">Required only if changing password</div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="new_password" class="form-label">
+                                <i class="bi bi-lock"></i> New Password
+                            </label>
+                            <div class="password-input">
+                                <input type="password" class="form-control" id="new_password" name="new_password">
+                                <button type="button" class="password-toggle">
+                                    <i class="bi bi-eye"></i>
+                                </button>
+                            </div>
+                            <div class="form-text">Leave blank to keep current password</div>
+                        </div>
+                    </div>
+
+                    <div class="form-actions">
+                        <button type="submit" class="btn-submit">
+                            <i class="bi bi-check-lg"></i> Save Changes
+                        </button>
+                        <button type="reset" class="btn-reset">
+                            <i class="bi bi-x-lg"></i> Reset
+                        </button>
+                    </div>
+                    </form>
                 </div>
 
                 <div class="tab-content hidden" id="activity-tab">
@@ -902,10 +918,10 @@ if (isset($_FILES['profile_picture']) && $_FILES['profile_picture']['error'] == 
                 const tabId = btn.dataset.tab;
                 
                 tabBtns.forEach(b => b.classList.remove('active'));
-                tabContents.forEach(c => c.classList.add('hidden'));
+                tabContents.forEach(c => c.style.display = 'none');
                 
                 btn.classList.add('active');
-                document.getElementById(`${tabId}-tab`).classList.remove('hidden');
+                document.getElementById(`${tabId}-tab`).style.display = 'block';
             });
         });
 
@@ -926,6 +942,37 @@ if (isset($_FILES['profile_picture']) && $_FILES['profile_picture']['error'] == 
                 }
             });
         });
+    });
+    </script>
+    <script>
+    document.addEventListener("DOMContentLoaded", function () {
+        const editBtn = document.getElementById("editProfileBtn");
+        const securityBtn = document.getElementById("securitySettingsBtn");
+
+        const tabButtons = document.querySelectorAll(".tab-btn");
+        const sections = document.querySelectorAll(".tab-content");
+
+        function activateTab(tabName) {
+            tabButtons.forEach(btn => {
+                btn.classList.toggle("active", btn.dataset.tab === tabName);
+            });
+
+            sections.forEach(content => {
+                const targetID = tabName + "-tab"; 
+                content.style.display = (content.id === targetID) ? "block" : "none";
+            });
+        }
+
+        editBtn.addEventListener("click", function () {
+            activateTab("personal");
+        });
+
+        securityBtn.addEventListener("click", function () {
+            activateTab("security");
+        });
+
+        // Optional: auto trigger default tab on page load
+        activateTab("personal");
     });
     </script>
 </body>
