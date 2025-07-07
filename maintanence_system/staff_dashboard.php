@@ -63,7 +63,7 @@ $reports_query = "
             WHERE Report_ID = r.Report_ID
               AND updated_by = ?
         )
-    WHERE sl.updated_by = ?
+    WHERE sl.updated_by = ? AND sl.status = 'In Progress' OR sl.status = 'Completed'
     GROUP BY r.Report_ID
     ORDER BY r.report_date DESC
     LIMIT 10
