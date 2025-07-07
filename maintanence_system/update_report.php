@@ -60,9 +60,13 @@ if (isset($uploadedFiles) && !empty($uploadedFiles['name'][0])) {
     }
 }
 
-    // Insert status log regardless of evidence
-    $stmt = $conn->prepare("INSERT INTO status_log (Report_ID, updated_by, status, updated_time) VALUES (?, ?, ?, NOW())");
-    $stmt->bind_param("sis", $report_id, $staff_id, $status);
+    // // Insert status log regardless of evidence
+    // $stmt = $conn->prepare("INSERT INTO status_log (Report_ID, updated_by, status, updated_time) VALUES (?, ?, ?, NOW())");
+    // $stmt->bind_param("sis", $report_id, $staff_id, $status);
+
+    // With this block:
+    $stmt = $conn->prepare("UPDATE status_log SET updated_by = ?, status = ?, updated_time = NOW() WHERE Report_ID = ?");
+    $stmt->bind_param("iss", $staff_id, $status, $report_id);
 
     if ($stmt->execute()) {
         $_SESSION['status_success'] = "Status updated successfully" . ($requireEvidence ? " with evidence." : ".");
