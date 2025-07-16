@@ -383,8 +383,8 @@ $staff_id = $_SESSION['id'];
         </div>
 
         <div class="profile-section">
-            <?php if ($_SESSION['role'] === 'customer'): ?>
-            <a href="profile.php" class="profile-pic">
+            <?php if ($_SESSION['role'] === 'Admin'): ?>
+            <a href="admin_profile.php" class="profile-pic">
                 <?php if (isset($_SESSION['profile_picture']) && !empty($_SESSION['profile_picture'])): ?>
                     <img src="uploads/profile_pictures/<?php echo htmlspecialchars($_SESSION['profile_picture']); ?>" 
                          alt="Profile Picture"
@@ -393,7 +393,7 @@ $staff_id = $_SESSION['id'];
                     <i class="bi bi-person"></i>
                 <?php endif; ?>
             </a>
-            <a href="profile.php" class="username"><?php echo htmlspecialchars($_SESSION['name']); ?></a>
+            <a href="admin_profile.php" class="username"><?php echo htmlspecialchars($_SESSION['name']); ?></a>
             <?php else: ?>
             <div class="profile-pic">
                 <i class="bi bi-person"></i>
