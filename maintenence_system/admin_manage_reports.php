@@ -309,8 +309,7 @@ $result = $conn->query($sql);
             <th>Location</th>
             <th>Date</th>
             <th>Urgency</th>
-            <th>Image</th>
-            <th>Evidence</th>
+            <th>Media</th>
             <th>Status</th>
             <th>Staff</th>
             <th>Actions</th>
@@ -329,14 +328,6 @@ $result = $conn->query($sql);
                 };
                 $currentStatus = $row['latest_status'] ?? 'Pending';
                 $staffInCharge = ($currentStatus == 'Pending') ? 'No staff yet' : ($row['staff_in_charge'] ?? '-');
-
-
-                // Fetch all evidence media
-                $evidenceQuery = $conn->query("SELECT file_path FROM media WHERE Report_ID = '$reportId' ORDER BY Media_ID ASC");
-                $evidences = [];
-                while ($ev = $evidenceQuery->fetch_assoc()) {
-                    $evidences[] = $ev['file_path'];
-                }
             ?>
             <tr>
                 <td><?= htmlspecialchars($reportId) ?></td>
@@ -353,36 +344,6 @@ $result = $conn->query($sql);
                     <?php else: ?>
                         <span style="color: #888;">No Image</span>
                     <?php endif; ?>
-                </td>
-                <td>
-                    <?php
-                    if (empty($evidences)) {
-                        echo '<span style="color: gray;">No Evidence</span>';
-                    } else {
-                        foreach ($evidences as $evi) {
-                            $ext = strtolower(pathinfo($evi, PATHINFO_EXTENSION));
-                            $filePath = htmlspecialchars($evi);
-
-                            if (in_array($ext, ['jpg', 'jpeg', 'png', 'gif'])) {
-                                echo "<img class='evidence-img' src='$filePath' alt=''>";
-
-                            } elseif ($ext === 'mp4') {
-                                echo "<video class='evidence-video' controls>
-                                        <source src='$filePath' type='video/mp4'>
-                                        Your browser does not support video.
-                                    </video>";
-
-                            } elseif (in_array($ext, ['mp3', 'wav', 'ogg'])) {
-                                echo "<audio controls>
-                                        <source src='$filePath' type='audio/$ext'>
-                                        Your browser does not support audio.
-                                      </audio>";
-                            } else {
-                                echo "<a href='$filePath' target='_blank'>Download File</a><br>";
-                            }
-                        }
-                    }
-                    ?>
                 </td>
                 <td><?= htmlspecialchars($currentStatus) ?></td>
                 <td><?= htmlspecialchars($staffInCharge) ?></td>
