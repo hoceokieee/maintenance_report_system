@@ -63,7 +63,7 @@ $reports_query = "
             WHERE Report_ID = r.Report_ID
               AND updated_by = ?
         )
-    WHERE sl.updated_by = ?
+    WHERE sl.updated_by = ? AND sl.status = 'In Progress' OR sl.status = 'Completed'
     GROUP BY r.Report_ID
     ORDER BY r.report_date DESC
     LIMIT 10
@@ -75,33 +75,36 @@ $assigned_reports = $stmt->get_result();
 
 // Fetch pending (unassigned) reports
 $pending_query = "
-    SELECT 
-        r.Report_ID,
-        r.Title,
-        r.Description,
-        r.Location,
-        r.report_date,
-        MIN(m.file_path) as media_path,
-        ul.label as urgency_label,
-        u.name as reporter_name,
-        sl.status
-    FROM REPORT r
-    LEFT JOIN MEDIA m ON r.Report_ID = m.Report_ID
-    LEFT JOIN URGENCY_LEVEL ul ON r.Urgency_ID = ul.Urgency_ID
-    LEFT JOIN USERS u ON r.User_ID = u.User_ID
+SELECT 
+    r.Report_ID,
+    r.Title,
+    r.Description,
+    r.Location,
+    r.report_date,
+    MIN(m.file_path) as media_path,
+    ul.label as urgency_label,
+    u.name as reporter_name,
+    sl.status
+FROM report r
+LEFT JOIN media m ON r.Report_ID = m.Report_ID
+LEFT JOIN urgency_level ul ON r.Urgency_ID = ul.Urgency_ID
+LEFT JOIN users u ON r.User_ID = u.User_ID
+LEFT JOIN (
+    SELECT sl1.*
+    FROM status_log sl1
     JOIN (
-        SELECT sl1.*
-        FROM status_log sl1
-        INNER JOIN (
-            SELECT Report_ID, MAX(Status_ID) AS max_status
-            FROM status_log
-            GROUP BY Report_ID
-        ) latest ON sl1.Report_ID = latest.Report_ID AND sl1.Status_ID = latest.max_status
-    ) sl ON r.Report_ID = sl.Report_ID
-    WHERE sl.status = 'Pending'
-    ORDER BY r.report_date DESC
-    LIMIT 10
+        SELECT Report_ID, MAX(Status_ID) AS max_status
+        FROM status_log
+        GROUP BY Report_ID
+    ) latest ON sl1.Report_ID = latest.Report_ID AND sl1.Status_ID = latest.max_status
+) sl ON r.Report_ID = sl.Report_ID
+WHERE sl.status = 'Pending'
+GROUP BY r.Report_ID
+ORDER BY r.report_date DESC
+LIMIT 10
+
 ";
+
 
 $stmt = $conn->prepare($pending_query);
 $stmt->execute();
